@@ -64,8 +64,6 @@ class USBAnalyzer : public Analyzer2
     USBPipeHandler mCtrlTransPacketHandlers;
     USBPipe mCtrlTransLastPipe;
 
-    U64 SendPacketToHandler( USBPacket& pckt );
-
     void ResetUSB()
     {
         mCtrlTransPacketHandlers.clear();

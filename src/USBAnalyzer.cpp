@@ -6,9 +6,10 @@
 #include "USBAnalyzer.h"
 #include "USBAnalyzerSettings.h"
 
-USBAnalyzer::USBAnalyzer() : mSimulationInitilized( false )
+USBAnalyzer::USBAnalyzer() : Analyzer2(), mSimulationInitilized( false )
 {
     SetAnalyzerSettings( &mSettings );
+     UseFrameV2();
 }
 
 USBAnalyzer::~USBAnalyzer()
@@ -30,33 +31,6 @@ void USBAnalyzer::SetupResults()
 bool FrameLessThan( const Frame& lhs, const Frame& rhs )
 {
     return lhs.mStartingSampleInclusive < rhs.mStartingSampleInclusive;
-}
-
-U64 USBAnalyzer::SendPacketToHandler( USBPacket& pckt )
-{
-    if( pckt.IsTokenPacket() )
-    {
-        mCtrlTransLastPipe.addr = pckt.GetAddress();
-        mCtrlTransLastPipe.endp = pckt.GetEndpoint();
-    }
-
-    // only control transfers and no SOF or PRE packets
-    if( mCtrlTransLastPipe.endp == 0 && pckt.mPID != PID_SOF && pckt.mPID != PID_PRE )
-    {
-        // do we have this address/enpoint already?
-        USBPipeHandler::iterator srch( mCtrlTransPacketHandlers.find( mCtrlTransLastPipe ) );
-
-        // is this a new address?
-        if( srch == mCtrlTransPacketHandlers.end() )
-        {
-            srch = mCtrlTransPacketHandlers.insert( std::make_pair( mCtrlTransLastPipe, USBControlTransferPacketHandler() ) ).first;
-            srch->second.Init( mResults.get(), mCtrlTransLastPipe.addr );
-        }
-
-        return srch->second.HandleControlTransfer( pckt );
-    }
-
-    return pckt.AddPacketFrames( mResults.get() );
 }
 
 void USBAnalyzer::WorkerThread()
@@ -95,12 +69,17 @@ void USBAnalyzer::WorkerThread()
                 // try reading an entire USB packet by parsing subsequent data signals
                 if( sf.GetPacket( pckt, s ) )
                 {
-                    if( mSettings.mDecodeLevel == OUT_CONTROL_TRANSFERS )
-                        lastFrameEnd = SendPacketToHandler( pckt );
-                    else if( mSettings.mDecodeLevel == OUT_PACKETS )
-                        lastFrameEnd = pckt.AddPacketFrames( mResults.get() );
+                    if( mSettings.mDecodeLevel == OUT_PACKETS )
+                    {
+                        if( !mSettings.mExcludeSOF || (pckt.mPID != PID_SOF) )
+                        {
+                            lastFrameEnd = pckt.AddPacketFrames( mResults.get() );
+                        }
+                    }
                     else if( mSettings.mDecodeLevel == OUT_BYTES )
+                    {
                         lastFrameEnd = pckt.AddRawByteFrames( mResults.get() );
+                    }
                 }
                 else
                 {

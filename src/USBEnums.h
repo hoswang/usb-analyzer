@@ -292,7 +292,6 @@ enum USBDecodeLevel
     OUT_PACKETS,
     OUT_BYTES,
     OUT_SIGNALS,
-    OUT_CONTROL_TRANSFERS,
 };
 
 enum USBClassCodes

@@ -24,12 +24,16 @@ class USBAnalyzerSettings : public AnalyzerSettings
     USBSpeed mSpeed;
     USBDecodeLevel mDecodeLevel;
 
+    bool mExcludeSOF;
+
   protected:
     AnalyzerSettingInterfaceChannel mDPChannelInterface;
     AnalyzerSettingInterfaceChannel mDMChannelInterface;
 
     AnalyzerSettingInterfaceNumberList mSpeedInterface;
     AnalyzerSettingInterfaceNumberList mDecodeLevelInterface;
+
+    AnalyzerSettingInterfaceBool mExcludeSOFInterface;
 };
 
 #endif // USB_ANALYZER_SETTINGS_H

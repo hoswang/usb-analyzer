@@ -5,7 +5,8 @@
 #include "USBTypes.h"
 
 USBAnalyzerSettings::USBAnalyzerSettings()
-    : mDMChannel( UNDEFINED_CHANNEL ), mDPChannel( UNDEFINED_CHANNEL ), mSpeed( LOW_SPEED ), mDecodeLevel( OUT_CONTROL_TRANSFERS )
+    : mDMChannel( UNDEFINED_CHANNEL ), mDPChannel( UNDEFINED_CHANNEL ), mSpeed( FULL_SPEED ), mDecodeLevel( OUT_PACKETS )
+    , mExcludeSOF(true)
 {
     // init the interface
     mDPChannelInterface.SetTitleAndTooltip( "D+", "USB D+ (green)" );
@@ -21,18 +22,21 @@ USBAnalyzerSettings::USBAnalyzerSettings()
     mSpeedInterface.SetNumber( mSpeed );
 
     mDecodeLevelInterface.SetTitleAndTooltip( "USB decode level", "Type of decoded USB output" );
-    mDecodeLevelInterface.AddNumber( OUT_CONTROL_TRANSFERS, "Control transfers", "Decodes the standard USB enpoint 0 control transfers." );
     mDecodeLevelInterface.AddNumber( OUT_PACKETS, "Packets", "Decode all the fields of USB packets" );
     mDecodeLevelInterface.AddNumber( OUT_BYTES, "Bytes", "Decode the data as raw bytes" );
     mDecodeLevelInterface.AddNumber( OUT_SIGNALS, "Signals", "Decode the USB signal states: J, K and SE0" );
 
-    mDecodeLevelInterface.SetNumber( OUT_CONTROL_TRANSFERS );
+    mDecodeLevelInterface.SetNumber( mDecodeLevel );
+
+    mExcludeSOFInterface.SetTitleAndTooltip( "Exclude SOF packets", "Exclude Start-of-Frame packets" );
+    mExcludeSOFInterface.SetValue( mExcludeSOF );
 
     // add the interface
     AddInterface( &mDPChannelInterface );
     AddInterface( &mDMChannelInterface );
     AddInterface( &mSpeedInterface );
     AddInterface( &mDecodeLevelInterface );
+    AddInterface( &mExcludeSOFInterface );
 
     // describe export
     AddExportOption( 0, "Export as text file" );
@@ -40,8 +44,8 @@ USBAnalyzerSettings::USBAnalyzerSettings()
 
     ClearChannels();
 
-    AddChannel( mDPChannel, "D+", false );
-    AddChannel( mDMChannel, "D-", false );
+    AddChannel( mDPChannel, "DP/D+", false );
+    AddChannel( mDMChannel, "DM/D-", false );
 }
 
 USBAnalyzerSettings::~USBAnalyzerSettings()
@@ -103,10 +107,12 @@ void USBAnalyzerSettings::LoadSettings( const char* settings )
     text_archive >> s;
     mDecodeLevel = USBDecodeLevel( s );
 
+    text_archive >> mExcludeSOF;
+
     ClearChannels();
 
-    AddChannel( mDPChannel, "D+", true );
-    AddChannel( mDMChannel, "D-", true );
+    AddChannel( mDPChannel, "DP/D+", true );
+    AddChannel( mDMChannel, "DM/D-", true );
 
     UpdateInterfacesFromSettings();
 }
@@ -119,6 +125,7 @@ const char* USBAnalyzerSettings::SaveSettings()
     text_archive << mDMChannel;
     text_archive << mSpeed;
     text_archive << mDecodeLevel;
+    text_archive << mExcludeSOF;
 
     return SetReturnString( text_archive.GetString() );
 }
